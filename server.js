@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const stripe = require("stripe")(process.env.VITE_PAYMENT_SECRET_KEY);
 const app = express();
@@ -16,27 +15,6 @@ const corsConfig = {
 app.use(cors(corsConfig));
 app.use(express.json());
 
-const verifyJWT = (req, res, next) => {
-  const authorization = req.headers.authorization;
-  if (!authorization) {
-    return res
-      .status(401)
-      .send({ error: true, message: "unauthorized access" });
-  }
-  const token = authorization.split(" ")[1];
-
-  jwt.verify(token, process.env.VITE_ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      console.error("JWT Verification Error:", err);
-      return res
-        .status(401)
-        .send({ error: true, message: "unauthorized access" });
-    }
-    req.decoded = decoded;
-    next();
-  });
-};
-
 
 // Server Body Start
 
@@ -50,14 +28,6 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-
-
-
-
-
-
-
-
 
 
 async function run() {
@@ -89,7 +59,7 @@ async function run() {
       res.send(allClasses);
     });
 
-    app.get("/instructorclasses", verifyJWT, async (req, res) => {
+    app.get("/instructorclasses", async (req, res) => {
       const { email } = req.query;
       if (!email) {
         res.send([]);
@@ -130,7 +100,7 @@ async function run() {
 
     // User APIs:
 
-    app.get("/users", verifyJWT, async (req, res) => {
+    app.get("/users", async (req, res) => {
       const result = await users.find().toArray();
       res.send(result);
     });
@@ -224,7 +194,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/cart", verifyJWT, async (req, res) => {
+    app.get("/cart", async (req, res) => {
       const { email } = req.query;
       if (!email) {
         res.send([]);
@@ -270,7 +240,7 @@ async function run() {
       res.send({ insertResult, deleteResult });
     });
 
-    app.get("/payments", verifyJWT, async (req, res) => {
+    app.get("/payments", async (req, res) => {
       const { email } = req.query;
       if (!email) {
         res.send([]);
@@ -288,7 +258,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/instructor-courses/:email", verifyJWT, async (req, res) => {
+    app.get("/instructor-courses/:email", async (req, res) => {
       const instructorEmail = req.params.email;
       try {
         // Fetch courses based on instructor's email
@@ -307,7 +277,7 @@ async function run() {
         });
       }
     });
-    app.get("/instructor-courses-for-admin", verifyJWT, async (req, res) => {
+    app.get("/instructor-courses-for-admin", async (req, res) => {
       try {
         // Fetch courses based on instructor's email
         const instructorCourses = await notApprovedClasses
@@ -327,7 +297,6 @@ async function run() {
 
     app.get(
       "/instructor-declined-courses/:email",
-      verifyJWT,
       async (req, res) => {
         const instructorEmail = req.params.email;
         try {
